@@ -1,4 +1,8 @@
-on: pull_request
+on:
+  pull_request:
+  push:
+    tags:
+      - 'v*'
 
 name: CI
 
@@ -44,7 +48,7 @@ jobs:
           tar -C target/release/ -cf target/release/smart-garden-gateway-doctor.tar smart-garden-gateway-doctor
 
       - name: Archive binary
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: smart-garden-gateway-doctor-linux
           path: target/release/smart-garden-gateway-doctor.tar
@@ -65,7 +69,26 @@ jobs:
         run: cargo build --target x86_64-pc-windows-gnu --release
 
       - name: Archive binary
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: smart-garden-gateway-doctor-windows
           path: target/x86_64-pc-windows-gnu/release/smart-garden-gateway-doctor.exe
+
+  Release:
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs:
+      - Linux
+      - Windows
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: 'smart-garden-gateway-doctor-*'
+          path: 'bin'
+          merge-multiple: true
+
+      - uses: ncipollo/release-action@v1
+        with:
+          artifacts: 'bin/*'
